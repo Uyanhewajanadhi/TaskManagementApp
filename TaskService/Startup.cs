@@ -1,13 +1,9 @@
-using GreenPipes;
-using MassTransit;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System;
-using TaskService.Consumer;
 using TaskService.Database;
 
 namespace UserService
@@ -27,27 +23,6 @@ namespace UserService
             services.AddDbContext<DatabaseContext>(options =>
                 options.UseSqlServer(
                     Configuration.GetConnectionString("DefaultConnection")));
-
-            services.AddMassTransit(x =>
-            {
-                x.AddConsumer<TaskConsumer>();
-                x.AddBus(provider => Bus.Factory.CreateUsingRabbitMq(cfg =>
-                {
-                    cfg.UseHealthCheck(provider);
-                    cfg.Host(new Uri("rabbitmq://localhost"), h =>
-                    {
-                        h.Username("guest");
-                        h.Password("guest");
-                    });
-                    cfg.ReceiveEndpoint("ticketQueue", ep =>
-                    {
-                        ep.PrefetchCount = 16;
-                        ep.UseMessageRetry(r => r.Interval(2, 100));
-                        ep.ConfigureConsumer<TaskConsumer>(provider);
-                    });
-                }));
-            });
-            services.AddMassTransitHostedService();
 
             services.AddControllers();
         }
